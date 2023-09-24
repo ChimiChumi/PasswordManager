@@ -19,9 +19,9 @@ namespace Mobiles
             // Read the working directory from the configuration file
             string workDir = File.Exists(configFilePath) ? File.ReadAllText(configFilePath) : "..\\..\\PasswordManager\\database\\";
 
-            string userName = "";
-            string email = "";
-            string masterPass = "";
+            string userName;
+            string email;
+            string masterPass;
             string? firstName = null;
             string? lastName = null;
 

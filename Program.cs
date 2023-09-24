@@ -12,7 +12,6 @@ namespace Mobiles
     {
         static void Main(string[] args)
         {
-
             // Define the path to the configuration file
             string configFilePath = "config.txt";
 

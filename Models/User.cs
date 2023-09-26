@@ -7,11 +7,11 @@ namespace PasswordManager.Models
         [Name("username")]
         public string UserName { get; set; }
 
-        [Name("password")]
-        public string PassWord { get; set; }
-
         [Name("email")]
         public string Email { get; set; }
+
+        [Name("password")]
+        public string PassWord { get; set; }
 
         [Name("firstname")]
         public string? FirstName { get; set; } = string.Empty;

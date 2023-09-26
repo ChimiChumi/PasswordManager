@@ -6,23 +6,27 @@ using System.Text;
 using CsvHelper;
 using PasswordManager.Models;
 
-namespace Mobiles
+namespace PasswordManager
 {
     class Program
     {
         static void Main(string[] args)
         {
-            // Define the path to the configuration file
             string configFilePath = "config.txt";
 
-            // Read the working directory from the configuration file
             string workDir = File.Exists(configFilePath) ? File.ReadAllText(configFilePath) : "..\\..\\PasswordManager\\database\\";
+
+            // Initialize FileHandler
+            FileHandler fileHandler = new FileHandler(workDir);
 
             string userName;
             string email;
             string masterPass;
             string? firstName = null;
             string? lastName = null;
+
+            bool loggedIn = false; // Track login status
+            string authUser = ""; // Track who is logged in
 
             if (args.Length > 0)
             {
@@ -34,8 +38,7 @@ namespace Mobiles
                             if (i + 1 < args.Length && !args[i + 1].StartsWith("--"))
                             {
                                 workDir = args[i + 1];
-                                // Update the configuration file with the new working directory
-                                File.WriteAllText(configFilePath, workDir);
+                                fileHandler.SetWorkDir(workDir, configFilePath);
                                 Console.WriteLine($"Working directory set to: {workDir}");
                                 i++;
                             }
@@ -52,25 +55,31 @@ namespace Mobiles
                                 email = args[i + 2];
                                 masterPass = args[i + 3];
 
-                                // Check if last name is provided
-                                if (i + 5 < args.Length && !args[i + 5].StartsWith("--"))
+                                if (i + 5 < args.Length && !args[i + 4].StartsWith("--") && !args[i + 5].StartsWith("--"))
                                 {
                                     firstName = args[i + 4];
                                     lastName = args[i + 5];
                                     i += 2;
                                 }
-
-                                // Check if first name is provided
-                                if (i + 4 < args.Length && !args[i + 4].StartsWith("--"))
+                                else if (i + 4 < args.Length && !args[i + 4].StartsWith("--"))
                                 {
                                     firstName = args[i + 4];
                                     i++;
                                 }
 
-                                // Perform user registration and write to CSV
-                                RegisterUser(userName, email, masterPass, firstName, lastName, workDir);
+                                // Create a User object
+                                var user = new User
+                                {
+                                    UserName = userName,
+                                    Email = email,
+                                    PassWord = HashPassword(masterPass), // Hash the password
+                                    FirstName = firstName,
+                                    LastName = lastName
+                                };
 
-                                Console.WriteLine($"User '{userName}' registered successfully.");
+                                // Use FileHandler to write the user details to the CSV file
+                                fileHandler.FileWrite(user);
+
                                 i += 3; // Skip to the next valid argument
                             }
                             else
@@ -80,9 +89,14 @@ namespace Mobiles
                             break;
 
                         case "--login":
-                            if (i + 1 < args.Length && !string.IsNullOrEmpty(args[i + 1]) && !args[i + 1].StartsWith("--"))
+                            if (i + 1 < args.Length && !args[i + 1].StartsWith("--"))
                             {
-                                userName = args[i + 1];
+                                Console.WriteLine("Error: Unexpected argument following --login. Expected format: --login");
+                            }
+                            else
+                            {
+                                Console.Write("Please enter username: ");
+                                userName = Console.ReadLine();
                                 string pass = string.Empty;
 
                                 // The password user enters during login
@@ -130,7 +144,9 @@ namespace Mobiles
 
                                 if (!string.IsNullOrEmpty(storedHash) && VerifyPassword(pass, storedHash))
                                 {
-                                    Console.WriteLine("\nLogin successful.");
+                                    loggedIn = true; // Set the logged-in flag to true
+                                    authUser = userName;
+                                    Console.WriteLine("\n\nSuccessful Authentication!\nPossible actions: --add, --list, --delete. Use 'exit' to log out:");
                                 }
                                 else
                                 {
@@ -138,14 +154,60 @@ namespace Mobiles
                                 }
                                 i++; // Skip the next argument
                             }
-                            else
-                            {
-                                Console.WriteLine("Error: Expected format: --login <username>");
-                            }
                             break;
 
                         case "--list":
-                            Console.WriteLine("list");
+                            if (loggedIn) // Check if the user is logged in
+                            {
+                                // Handle listing functionality here
+                                Console.WriteLine("List command executed.");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Error: You need to log in first.");
+                            }
+                            break;
+
+                        case "--add":
+                            if (loggedIn) // Check if the user is logged in
+                            {
+                                if (i + 3 < args.Length && !args[i + 1].StartsWith("--") && !args[i + 2].StartsWith("--") && !args[i + 3].StartsWith("--"))
+                                {
+                                    var vault = new VaultEntry
+                                    {
+                                        UserId = authUser,
+                                        UserName = args[i + 1],
+                                        WebSite = args[i + 2],
+                                        PassWord = HashPassword(args[i + 3])
+                                    };
+
+                                    // Use FileHandler to write the user details to the CSV file
+                                    fileHandler.FileWrite(vault);
+
+                                    i += 3; // Skip to the next valid argument
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Expected argument looks the following: --add <website-username> <website> <secret>");
+                                }
+                                break;
+                            }
+                            else
+                            {
+                                Console.WriteLine("Error: You need to log in first.");
+                            }
+                            break;
+
+                        case "--delete":
+                            if (loggedIn) // Check if the user is logged in
+                            {
+                                // Handle adding functionality here
+                                Console.WriteLine("Add command executed.");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Error: You need to log in first.");
+                            }
                             break;
 
                         default:
@@ -154,39 +216,20 @@ namespace Mobiles
                     }
                 }
             }
-        }
 
-        static void RegisterUser(string userName, string email, string masterPass, string? firstName, string? lastName, string workDir)
-        {
-            // Hashing the password before saving it
-            string hashedPassword = HashPassword(masterPass);
-
-            // Create a User object
-            var user = new User
+            while (loggedIn)
             {
-                UserName = userName,
-                PassWord = hashedPassword,
-                Email = email,
-                FirstName = firstName, // Please note there seems to be a typo here, it should probably be FirstName
-                LastName = lastName
-            };
-
-            // Ensure the directory for the CSV file exists
-            Directory.CreateDirectory(workDir);
-
-            // Define the path to the user CSV file
-            string userCsvPath = Path.Combine(workDir, "user.csv");
-
-            // Write the user details to the CSV file
-            using (var writer = new StreamWriter(userCsvPath, append: true))
-            using (var csv = new CsvWriter(writer, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)))
-            {
-                // Ensure that the record will be written on a new line
-                if (new FileInfo(userCsvPath).Length > 0)
+                string input = Console.ReadLine();
+                if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
                 {
-                    writer.WriteLine();
+                    loggedIn = false; // Log out and exit the loop
+                    authUser = null;
                 }
-                csv.WriteRecord(user);
+                else
+                {
+                    // Handle additional commands within the session
+                    Console.WriteLine("You entered: " + input);
+                }
             }
         }
 

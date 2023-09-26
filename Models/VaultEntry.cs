@@ -12,10 +12,10 @@ namespace PasswordManager.Models
         [Name("username")]
         public string UserName { get; set; }
 
+        [Name("website")]
+        public string WebSite { get; set; } = string.Empty;
+
         [Name("password")]
         public string PassWord { get; set; }
-
-        [Name("website")]
-        public string Website { get; set; } = string.Empty;
     }
 }

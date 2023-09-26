@@ -1,34 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Sockets;
+﻿using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
+using Fernet;
 
-namespace PasswordManager
+public class EncryptedType
 {
-   /* class EncryptedType
+    private const int KeySize = 256; // Use 256 bits (32 bytes) key size for AES
+    private const int SaltSize = 16; // Salt size for PBKDF2
+
+    public static Encrypt(string secret)
     {
-        Key  // user email
-    ...Secret  // data to be encrypted
+        using var hashing = SHA256.Create();
+        byte[] keyHash = hashing.ComputeHash(Encoding.Unicode.GetBytes(secret));
+        string key = Base64Url.Encode(keyHash);
+        string message = Base64Url.Encode(Encoding.Unicode.GetBytes(secret));
+        string encryptedSecret = Fernet.Encrypt(key, message);
+        return new EncryptedType(key, encryptedSecret);
+    }
 
-    EncryptedType Encrypt()
-        {
-            using var hashing = SHA256.Create();
-            byte[] keyHash = hashing.ComputeHash(Encoding.Unicode.GetBytes(Key));
-            string key = Base64UrlEncoder.Encode(keyHash);
-            string message = Base64UrlEncoder.Encode(Encoding.Unicode.GetBytes(Secret));
-            return new(Key, Fernet.Encrypt(key, message));
-        }
-
-        EncryptedType Decrypt()
-        {
-            using var hashing = SHA256.Create();
-            byte[] keyHash = hashing.ComputeHash(Encoding.Unicode.GetBytes(Key));
-            string key = Base64UrlEncoder.Encode(keyHash);
-            string encodedSecret = Fernet.Decrypt(key, Secret);
-            string message = Encoding.Unicode.GetString(Base64UrlEncoder.DecodeBytes(encodedSecret));
-            return new(Key, message);
-        }
-    }*/
+    public static Decrypt(string key, string encryptedSecret)
+    {
+        string decodedKey = Base64Url.Decode(key);
+        string decodedSecret = Fernet.Decrypt(decodedKey, encryptedSecret);
+        string secret = Encoding.Unicode.GetString(Base64Url.Decode(decodedSecret));
+        return new EncryptedType(key, secret);
+    }
 }

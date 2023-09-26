@@ -1,6 +1,4 @@
-﻿using System;
-using System.Globalization;
-using System.IO;
+﻿using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using CsvHelper;
@@ -18,6 +16,7 @@ namespace PasswordManager
 
             // Initialize FileHandler
             FileHandler fileHandler = new FileHandler(workDir);
+            EncryptedType encryptedType = new EncryptedType();
 
             string userName;
             string email;
@@ -72,7 +71,7 @@ namespace PasswordManager
                                 {
                                     UserName = userName,
                                     Email = email,
-                                    PassWord = HashPassword(masterPass), // Hash the password
+                                    PassWord = encryptedType.Encrypt(masterPass, userName), // Hash the password
                                     FirstName = firstName,
                                     LastName = lastName
                                 };
@@ -122,7 +121,7 @@ namespace PasswordManager
 
                                 // Retrieve the hashed password from the CSV file for the user
                                 string userCsvPath = Path.Combine(workDir, "user.csv");
-                                string storedHash = "";
+                                string pwd = "";
                                 if (File.Exists(userCsvPath))
                                 {
                                     using (var reader = new StreamReader(userCsvPath))
@@ -134,7 +133,7 @@ namespace PasswordManager
                                                 var record = csv.GetRecord<User>();
                                                 if (record.UserName == userName)
                                                 {
-                                                    storedHash = record.PassWord;
+                                                    pwd = record.PassWord;
                                                     break;
                                                 }
                                             }
@@ -142,10 +141,11 @@ namespace PasswordManager
                                     }
                                 }
 
-                                if (!string.IsNullOrEmpty(storedHash) && VerifyPassword(pass, storedHash))
+                                if (!string.IsNullOrEmpty(pwd) && (encryptedType.Decrypt(pwd, userName) == pass) )
                                 {
                                     loggedIn = true; // Set the logged-in flag to true
                                     authUser = userName;
+                                    //Console.WriteLine("Jelszo: " + encryptedType.Decrypt(pwd, authUser));
                                     Console.WriteLine("\n\nSuccessful Authentication!\nPossible actions: --add, --list, --delete. Use 'exit' to log out:");
                                 }
                                 else
@@ -178,7 +178,7 @@ namespace PasswordManager
                                         UserId = authUser,
                                         UserName = args[i + 1],
                                         WebSite = args[i + 2],
-                                        PassWord = HashPassword(args[i + 3])
+                                        PassWord = encryptedType.Encrypt(args[i + 3], authUser)
                                     };
 
                                     // Use FileHandler to write the user details to the CSV file
@@ -202,7 +202,7 @@ namespace PasswordManager
                             if (loggedIn) // Check if the user is logged in
                             {
                                 // Handle adding functionality here
-                                Console.WriteLine("Add command executed.");
+                                Console.WriteLine("Delete command executed.");
                             }
                             else
                             {
@@ -223,7 +223,7 @@ namespace PasswordManager
                 if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
                 {
                     loggedIn = false; // Log out and exit the loop
-                    authUser = null;
+                    authUser = "";
                 }
                 else
                 {
@@ -231,29 +231,6 @@ namespace PasswordManager
                     Console.WriteLine("You entered: " + input);
                 }
             }
-        }
-
-        static string HashPassword(string password)
-        {
-            using (SHA256 sha256Hash = SHA256.Create())
-            {
-                // ComputeHash - returns byte array
-                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
-
-                // Convert byte array to a string
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    builder.Append(bytes[i].ToString("x2"));
-                }
-                return builder.ToString();
-            }
-        }
-
-        static bool VerifyPassword(string inputPassword, string storedHash)
-        {
-            string hashedInputPassword = HashPassword(inputPassword);
-            return hashedInputPassword == storedHash;
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using CsvHelper;
+﻿#pragma warning disable
+using CsvHelper;
 using CsvHelper.Configuration;
 using PasswordManager.Models;
 using System.Globalization;

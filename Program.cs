@@ -1,8 +1,6 @@
-﻿using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
-using CsvHelper;
+﻿using CsvHelper;
 using PasswordManager.Models;
+using System.Globalization;
 
 namespace PasswordManager
 {
@@ -145,7 +143,7 @@ namespace PasswordManager
                                     }
                                 }
 
-                                if (!string.IsNullOrEmpty(pwd) && (encryptedType.Decrypt(pwd, userName) == pass) )
+                                if (!string.IsNullOrEmpty(pwd) && (encryptedType.Decrypt(pwd, userName) == pass))
                                 {
                                     loggedIn = true; // Set the logged-in flag to true
                                     authUser = userName;
@@ -176,7 +174,7 @@ namespace PasswordManager
                 }
                 else
                 {
-                    switch (input) 
+                    switch (input)
                     {
                         case "--list":
                             break;
@@ -220,7 +218,7 @@ namespace PasswordManager
                             // Use FileHandler to write the user details to the CSV file
                             fileHandler.FileWrite(vault);
                             Console.WriteLine("\nSecret added to your personal vault!");
-                        break;
+                            break;
 
                         case "--delete":
                             break;

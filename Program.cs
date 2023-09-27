@@ -53,6 +53,7 @@ namespace PasswordManager
                                 userName = args[i + 1];
                                 email = args[i + 2];
                                 masterPass = args[i + 3];
+                                //Console.WriteLine(masterPass);
 
                                 if (i + 5 < args.Length && !args[i + 4].StartsWith("--") && !args[i + 5].StartsWith("--"))
                                 {
@@ -71,10 +72,15 @@ namespace PasswordManager
                                 {
                                     UserName = userName,
                                     Email = email,
-                                    PassWord = encryptedType.Encrypt(masterPass, userName), // Hash the password
+                                    PassWord = encryptedType.Encrypt(masterPass, userName),
                                     FirstName = firstName,
                                     LastName = lastName
                                 };
+
+                                string encryptedPassword = encryptedType.Encrypt(masterPass, userName);
+                                Console.WriteLine("Encrypted Password: " + encryptedPassword);
+                                string decryptedPassword = encryptedType.Decrypt(encryptedPassword, userName);
+                                Console.WriteLine("Decrypted Password: " + decryptedPassword);
 
                                 // Use FileHandler to write the user details to the CSV file
                                 fileHandler.FileWrite(user);
@@ -145,7 +151,7 @@ namespace PasswordManager
                                 {
                                     loggedIn = true; // Set the logged-in flag to true
                                     authUser = userName;
-                                    //Console.WriteLine("Jelszo: " + encryptedType.Decrypt(pwd, authUser));
+                                    Console.WriteLine("Jelszo: " + encryptedType.Decrypt(pwd, authUser));
                                     Console.WriteLine("\n\nSuccessful Authentication!\nPossible actions: --add, --list, --delete. Use 'exit' to log out:");
                                 }
                                 else

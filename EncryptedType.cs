@@ -1,27 +1,80 @@
-﻿using System.Security.Cryptography;
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
-using Fernet;
 
 public class EncryptedType
 {
-    private const int KeySize = 256; // Use 256 bits (32 bytes) key size for AES
-    private const int SaltSize = 16; // Salt size for PBKDF2
-
-    public static Encrypt(string secret)
+    private static byte[] GenerateKey(string user)
     {
-        using var hashing = SHA256.Create();
-        byte[] keyHash = hashing.ComputeHash(Encoding.Unicode.GetBytes(secret));
-        string key = Base64Url.Encode(keyHash);
-        string message = Base64Url.Encode(Encoding.Unicode.GetBytes(secret));
-        string encryptedSecret = Fernet.Encrypt(key, message);
-        return new EncryptedType(key, encryptedSecret);
+        using (SHA256 sha256 = SHA256.Create())
+        {
+            byte[] userBytes = Encoding.UTF8.GetBytes(user);
+            return sha256.ComputeHash(userBytes);
+        }
     }
 
-    public static Decrypt(string key, string encryptedSecret)
+    public string Encrypt(string secret, string user)
     {
-        string decodedKey = Base64Url.Decode(key);
-        string decodedSecret = Fernet.Decrypt(decodedKey, encryptedSecret);
-        string secret = Encoding.Unicode.GetString(Base64Url.Decode(decodedSecret));
-        return new EncryptedType(key, secret);
+        byte[] key = GenerateKey(user);
+
+        using (Aes aesAlg = Aes.Create())
+        {
+            aesAlg.Key = key;
+            aesAlg.GenerateIV();
+
+            // Create an encryptor to perform the stream transform
+            ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+            using (MemoryStream msEncrypt = new MemoryStream())
+            {
+                // Write the IV to the beginning of the stream
+                msEncrypt.Write(aesAlg.IV, 0, aesAlg.IV.Length);
+
+                using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                {
+                    using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                    {
+                        swEncrypt.Write(secret);
+                    }
+                }
+
+                return Convert.ToBase64String(msEncrypt.ToArray());
+            }
+        }
+    }
+
+    public string Decrypt(string secret, string user)
+    {
+        byte[] key = GenerateKey(user);
+
+        using (Aes aesAlg = Aes.Create())
+        {
+            aesAlg.Key = key;
+
+            byte[] iv = new byte[aesAlg.BlockSize / 8];
+
+            // Read the IV from the beginning of the encrypted data
+            byte[] encryptedBytes = Convert.FromBase64String(secret);
+            Array.Copy(encryptedBytes, iv, iv.Length);
+
+            aesAlg.IV = iv;
+
+            // Create a decryptor to perform the stream transform
+            ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+
+            using (MemoryStream msDecrypt = new MemoryStream(encryptedBytes, iv.Length, encryptedBytes.Length - iv.Length))
+            {
+                using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                {
+                    using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                    {
+                        string decryptedPassword = srDecrypt.ReadToEnd();
+                        return decryptedPassword;
+                    }
+                }
+            }
+        }
     }
 }

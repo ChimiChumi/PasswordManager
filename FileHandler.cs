@@ -55,7 +55,7 @@ namespace PasswordManager
             }
 
             using (var writer = new StreamWriter(userCsvPath, append: true))
-            using (var csv = new CsvWriter(writer, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)))
+            using (var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)))
             {
                 if (new FileInfo(userCsvPath).Length > 0)
                 {
@@ -74,7 +74,7 @@ namespace PasswordManager
 
             // Write the user details to the CSV file
             using (var writer = new StreamWriter(vaultCsvPath, append: true))
-            using (var csv = new CsvWriter(writer, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)))
+            using (var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)))
             {
                 // Ensure that the record will be written on a new line
                 if (new FileInfo(vaultCsvPath).Length > 0)

@@ -53,7 +53,6 @@ namespace PasswordManager
                                 userName = args[i + 1];
                                 email = args[i + 2];
                                 masterPass = args[i + 3];
-                                //Console.WriteLine(masterPass);
 
                                 if (i + 5 < args.Length && !args[i + 4].StartsWith("--") && !args[i + 5].StartsWith("--"))
                                 {
@@ -77,10 +76,10 @@ namespace PasswordManager
                                     LastName = lastName
                                 };
 
-                                string encryptedPassword = encryptedType.Encrypt(masterPass, userName);
+                                /*string encryptedPassword = encryptedType.Encrypt(masterPass, userName);
                                 Console.WriteLine("Encrypted Password: " + encryptedPassword);
                                 string decryptedPassword = encryptedType.Decrypt(encryptedPassword, userName);
-                                Console.WriteLine("Decrypted Password: " + decryptedPassword);
+                                Console.WriteLine("Decrypted Password: " + decryptedPassword);*/
 
                                 // Use FileHandler to write the user details to the CSV file
                                 fileHandler.FileWrite(user);
@@ -104,7 +103,6 @@ namespace PasswordManager
                                 userName = Console.ReadLine();
                                 string pass = string.Empty;
 
-                                // The password user enters during login
                                 Console.Write("Please enter password: ");
 
                                 ConsoleKey key;
@@ -151,7 +149,6 @@ namespace PasswordManager
                                 {
                                     loggedIn = true; // Set the logged-in flag to true
                                     authUser = userName;
-                                    Console.WriteLine("Jelszo: " + encryptedType.Decrypt(pwd, authUser));
                                     Console.WriteLine("\n\nSuccessful Authentication!\nPossible actions: --add, --list, --delete. Use 'exit' to log out:");
                                 }
                                 else
@@ -159,60 +156,6 @@ namespace PasswordManager
                                     Console.WriteLine("\nInvalid username or password.");
                                 }
                                 i++; // Skip the next argument
-                            }
-                            break;
-
-                        case "--list":
-                            if (loggedIn) // Check if the user is logged in
-                            {
-                                // Handle listing functionality here
-                                Console.WriteLine("List command executed.");
-                            }
-                            else
-                            {
-                                Console.WriteLine("Error: You need to log in first.");
-                            }
-                            break;
-
-                        case "--add":
-                            if (loggedIn) // Check if the user is logged in
-                            {
-                                if (i + 3 < args.Length && !args[i + 1].StartsWith("--") && !args[i + 2].StartsWith("--") && !args[i + 3].StartsWith("--"))
-                                {
-                                    var vault = new VaultEntry
-                                    {
-                                        UserId = authUser,
-                                        UserName = args[i + 1],
-                                        WebSite = args[i + 2],
-                                        PassWord = encryptedType.Encrypt(args[i + 3], authUser)
-                                    };
-
-                                    // Use FileHandler to write the user details to the CSV file
-                                    fileHandler.FileWrite(vault);
-
-                                    i += 3; // Skip to the next valid argument
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Expected argument looks the following: --add <website-username> <website> <secret>");
-                                }
-                                break;
-                            }
-                            else
-                            {
-                                Console.WriteLine("Error: You need to log in first.");
-                            }
-                            break;
-
-                        case "--delete":
-                            if (loggedIn) // Check if the user is logged in
-                            {
-                                // Handle adding functionality here
-                                Console.WriteLine("Delete command executed.");
-                            }
-                            else
-                            {
-                                Console.WriteLine("Error: You need to log in first.");
                             }
                             break;
 
@@ -233,8 +176,59 @@ namespace PasswordManager
                 }
                 else
                 {
-                    // Handle additional commands within the session
-                    Console.WriteLine("You entered: " + input);
+                    switch (input) 
+                    {
+                        case "--list":
+                            break;
+
+                        case "--add":
+                            Console.WriteLine("\nTo save a new secret, please fill out the required fields below!");
+                            Console.Write("Website: ");
+                            string website = Console.ReadLine();
+
+                            if (website == null)
+                            {
+                                Console.WriteLine("Website field cannot be empty!");
+                                break;
+                            }
+
+                            Console.Write("Username on website: ");
+                            string webUserName = Console.ReadLine();
+
+                            if (webUserName == null)
+                            {
+                                Console.WriteLine("Username field cannot be empty!");
+                                break;
+                            }
+
+                            Console.Write("Password on website: ");
+                            string webPwd = Console.ReadLine();
+
+                            if (webPwd == null)
+                            {
+                                Console.WriteLine("Password field cannot be empty!");
+                                break;
+                            }
+                            var vault = new Vault
+                            {
+                                UserId = authUser,
+                                UserName = webUserName,
+                                WebSite = website,
+                                PassWord = encryptedType.Encrypt(webPwd, authUser)
+                            };
+
+                            // Use FileHandler to write the user details to the CSV file
+                            fileHandler.FileWrite(vault);
+                            Console.WriteLine("\nSecret added to your personal vault!");
+                        break;
+
+                        case "--delete":
+                            break;
+
+                        default:
+                            Console.WriteLine("Unknown command: " + input);
+                            break;
+                    }
                 }
             }
         }

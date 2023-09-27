@@ -66,7 +66,7 @@ namespace PasswordManager
             }
         }
 
-        public void FileWrite(VaultEntry vault)
+        public void FileWrite(Vault vault)
         {
             Directory.CreateDirectory(workDir);
 

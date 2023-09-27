@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace PasswordManager.Models
 {
-    public class VaultEntry
+    public class Vault
     {
         [Name("user_id")]
         public string UserId { get; set; }

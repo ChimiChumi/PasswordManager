@@ -1,7 +1,7 @@
-﻿#pragma warning disable
-using CsvHelper;
+﻿using CsvHelper;
 using CsvHelper.Configuration;
 using PasswordManager.Models;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace PasswordManager
@@ -17,6 +17,7 @@ namespace PasswordManager
             this.workDir = workDir;
             Directory.CreateDirectory(workDir);
             File.WriteAllText(configFilePath, workDir);
+            Console.WriteLine($"\nWorking directory set to: {workDir}\n");
         }
 
         public bool IsEmailAlreadyRegistered(string email)
@@ -34,14 +35,14 @@ namespace PasswordManager
                 while (csv.Read())
                 {
                     var record = csv.GetRecord<User>();
-                    if (record.Email == email)
+                    if (record?.Email == email)
                     {
                         return true; // Email is already registered.
                     }
                 }
             }
 
-            return false; // Email is not registered.
+            return false;
         }
 
         public void FileWrite(User user)
@@ -51,39 +52,67 @@ namespace PasswordManager
 
             if (IsEmailAlreadyRegistered(user.Email))
             {
-                Console.WriteLine($"Error: User with email '{user.Email}' already exists.");
+                Console.WriteLine($"\n\nError: User with email '{user.Email}' already exists.");
                 return;
             }
 
-            using (var writer = new StreamWriter(userCsvPath, append: true))
-            using (var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)))
+            using (StreamWriter writer = new(userCsvPath, append: true))
             {
-                if (new FileInfo(userCsvPath).Length > 0)
+                if (writer.BaseStream.Length == 0)
                 {
-                    writer.WriteLine();
+                    CsvConfiguration config = new(CultureInfo.InvariantCulture)
+                    {
+                        HasHeaderRecord = true
+                    };
+                    using CsvWriter csv = new(writer, config);
+                    csv.WriteRecords(new User[] { user });
                 }
-                csv.WriteRecord(user);
-                Console.WriteLine($"User '{user.UserName}' registered successfully.");
+                else
+                {
+                    CsvConfiguration config = new(CultureInfo.InvariantCulture)
+                    {
+                        HasHeaderRecord = false
+                    };
+                    using CsvWriter csv = new(writer, config);
+                    csv.WriteRecords(new User[] { user });
+                } 
             }
         }
 
         public void FileWrite(Vault vault)
         {
             Directory.CreateDirectory(workDir);
+            string userCsvPath = Path.Combine(workDir, "vault.csv");
 
-            string vaultCsvPath = Path.Combine(workDir, "vault.csv");
-
-            // Write the user details to the CSV file
-            using (var writer = new StreamWriter(vaultCsvPath, append: true))
-            using (var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)))
+            if (IsEmailAlreadyRegistered(vault.WebSite))
             {
-                // Ensure that the record will be written on a new line
-                if (new FileInfo(vaultCsvPath).Length > 0)
-                {
-                    writer.WriteLine();
-                }
-                csv.WriteRecord(vault);
+                Console.WriteLine($"Error: Secret with this website already exsits: '{vault.WebSite}'.");
+                return;
             }
+
+            using (StreamWriter writer = new(userCsvPath, append: true))
+            {
+                if (writer.BaseStream.Length == 0)
+                {
+                    CsvConfiguration config = new(CultureInfo.InvariantCulture)
+                    {
+                        HasHeaderRecord = true
+                    };
+                    using CsvWriter csv = new(writer, config);
+                    csv.WriteRecords(new Vault[] { vault });
+                }
+                else
+                {
+                    CsvConfiguration config = new(CultureInfo.InvariantCulture)
+                    {
+                        HasHeaderRecord = false
+                    };
+                    using CsvWriter csv = new(writer, config);
+                    csv.WriteRecords(new Vault[] { vault });
+                }
+            }
+
+            Console.WriteLine("\nSecret added to your personal vault!");
         }
     }
 }

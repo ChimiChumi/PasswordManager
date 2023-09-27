@@ -1,5 +1,4 @@
-﻿#pragma warning disable
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 
 public class EncryptedType

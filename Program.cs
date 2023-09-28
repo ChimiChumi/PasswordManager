@@ -1,6 +1,7 @@
-﻿using CsvHelper;
+﻿#pragma warning disable
+using PasswordManager.Classes;
 using PasswordManager.Models;
-using System.Globalization;
+using System.Threading;
 
 namespace PasswordManager
 {
@@ -8,22 +9,20 @@ namespace PasswordManager
     {
         static void Main(string[] args)
         {
-            string configFilePath = "config.txt";
-
-            string workDir = File.Exists(configFilePath) ? File.ReadAllText(configFilePath) : "..\\..\\PasswordManager\\database\\";
-
-            // Initialize FileHandler
-            FileHandler fileHandler = new FileHandler(workDir);
-            EncryptedType encryptedType = new EncryptedType();
-
             string userName;
             string email;
-            string masterPass;
-            string? firstName = null;
-            string? lastName = null;
+            string firstName;
+            string lastName;
 
-            bool loggedIn = false; // Track login status
-            string authUser = ""; // Track who is logged in
+            bool loggedIn = false;
+            string authUser = "";
+
+            string configFile = "config.txt";
+            string workDir = File.Exists(configFile) ? File.ReadAllText(configFile) : "..\\..\\PasswordManager\\database\\";
+
+            FileHandler fileHandler = new FileHandler(workDir);
+            EncryptedType encryptedType = new EncryptedType();
+            Utils utils = new Utils();
 
             if (args.Length > 0)
             {
@@ -35,117 +34,35 @@ namespace PasswordManager
                             if (i + 1 < args.Length && !args[i + 1].StartsWith("--"))
                             {
                                 workDir = args[i + 1];
-                                fileHandler.SetWorkDir(workDir, configFilePath);
+                                fileHandler.SetWorkDir(workDir, configFile);
                                 i++;
                             }
                             else
                             {
                                 Console.WriteLine("\nError: Missing or invalid path after --workdir.\n");
-                                break;
+                                return;
                             }
                             break;
 
                         case "--register":
-                            if (i + 1 < args.Length && !args[i + 1].StartsWith("--"))
+                            if (i + 1 < args.Length)
                             {
-                                Console.WriteLine("\nError: Unexpected argument following --login.\n");
-                                break;
+                                utils.badArgument("--register");
+                                return;
                             }
                             else
                             {
-                                Console.WriteLine("\n*******************### WELCOME! ###*******************\nTo create an account, please fill out the fields below.\n");
+                                Console.WriteLine("\n*******************### GREETINGS! ###*******************\nTo create an account, please fill out the fields below.\n");
 
-                                Console.Write("        First Name: ");
-                                firstName = Console.ReadLine();
+                                firstName = utils.GetUserInput(" First Name");
+                                lastName = utils.GetUserInput("  Last Name");
+                                userName = utils.GetUserInput("   Username");
+                                email = utils.GetUserInput("      Email");
+                                if (fileHandler.emailPresent(email) == true) break;
+                                string pwd = utils.GetPasswordInput("Master Password");
+                                string confirmPassword = utils.GetPasswordInput("Repeat Password");
 
-                                if (firstName == "")
-                                {
-                                    Console.WriteLine("\nThis field cannot be empty!\n");
-                                    break;
-                                }
-
-                                Console.Write("         Last Name: ");
-                                userName = Console.ReadLine();
-
-                                if (userName == "")
-                                {
-                                    Console.WriteLine("\nThis field cannot be empty!\n");
-                                    break;
-                                }
-
-                                Console.Write("          Username: ");
-                                userName = Console.ReadLine();
-
-                                if (userName == "")
-                                {
-                                    Console.WriteLine("\nThis field cannot be empty!\n");
-                                    break;
-                                }
-
-                                Console.Write("             Email: ");
-                                email = Console.ReadLine()!;
-
-                                if (email == "")
-                                {
-                                    Console.WriteLine("\nThis field cannot be empty!\n");
-                                    break;
-                                }
-
-                                Console.Write("   Master Password: ");
-                                string pwd1 = string.Empty;
-
-                                ConsoleKey key1;
-                                do
-                                {
-                                    var keyInfo = Console.ReadKey(intercept: true);
-                                    key1 = keyInfo.Key;
-
-                                    if (key1 == ConsoleKey.Backspace && pwd1.Length > 0)
-                                    {
-                                        Console.Write("\b \b");
-                                        pwd1 = pwd1[0..^1];
-                                    }
-                                    else if (!char.IsControl(keyInfo.KeyChar))
-                                    {
-                                        Console.Write('*');
-                                        pwd1 += keyInfo.KeyChar;
-                                    }
-                                } while (key1 != ConsoleKey.Enter);
-
-                                if (pwd1 == "")
-                                {
-                                    Console.WriteLine("Password field cannot be empty!");
-                                    break;
-                                }
-
-                                Console.Write("\n   Repeat password: ");
-                                string pwd2 = string.Empty;
-
-                                ConsoleKey key2;
-                                do
-                                {
-                                    var keyInfo = Console.ReadKey(intercept: true);
-                                    key2 = keyInfo.Key;
-
-                                    if (key2 == ConsoleKey.Backspace && pwd2.Length > 0)
-                                    {
-                                        Console.Write("\b \b");
-                                        pwd2 = pwd2[0..^1];
-                                    }
-                                    else if (!char.IsControl(keyInfo.KeyChar))
-                                    {
-                                        Console.Write('*');
-                                        pwd2 += keyInfo.KeyChar;
-                                    }
-                                } while (key2 != ConsoleKey.Enter);
-
-                                if (pwd2 == "")
-                                {
-                                    Console.WriteLine("\nThis field cannot be empty!\n");
-                                    break;
-                                }
-
-                                if(pwd1 != pwd2)
+                                if (pwd != confirmPassword)
                                 {
                                     Console.WriteLine("\n\nThe entered passwords do not match!\n");
                                     break;
@@ -155,90 +72,57 @@ namespace PasswordManager
                                 {
                                     UserName = userName,
                                     Email = email,
-                                    PassWord = encryptedType.Encrypt(pwd2, userName),
+                                    PassWord = encryptedType.Encrypt(pwd, userName),
                                     FirstName = firstName,
                                     LastName = lastName
                                 };
 
                                 fileHandler.FileWrite(user);
-                                Console.WriteLine("\n\nRegistration Successful!\nTo log in, use '--login'\n");
-
-                                i += 3; // Skip to the next valid argument
-                            }
-                            break;
-
-                        case "--login":
-                            if (i + 1 < args.Length && !args[i + 1].StartsWith("--"))
-                            {
-                                Console.WriteLine("Error: Unexpected argument following --login. Expected format: --login");
                                 break;
                             }
-                            else
+
+                        case "--login":
+
+                            if (i + 1 < args.Length)
                             {
-                                Console.WriteLine("\nPlease enter your master credentials to access your vault!\n");
-                                Console.Write("Username: ");
-                                userName = Console.ReadLine();
-                                string pass = string.Empty;
+                                utils.badArgument("--login");
+                                return;
+                            }
 
-                                Console.Write("Password: ");
+                            Console.WriteLine("\nPlease enter your master credentials to access your vault:\n");
 
-                                ConsoleKey key;
-                                do
-                                {
-                                    var keyInfo = Console.ReadKey(intercept: true);
-                                    key = keyInfo.Key;
-
-                                    if (key == ConsoleKey.Backspace && pass.Length > 0)
-                                    {
-                                        Console.Write("\b \b");
-                                        pass = pass[0..^1];
-                                    }
-                                    else if (!char.IsControl(keyInfo.KeyChar))
-                                    {
-                                        Console.Write('*');
-                                        pass += keyInfo.KeyChar;
-                                    }
-                                } while (key != ConsoleKey.Enter);
-
-                                // Retrieve the hashed password from the CSV file for the user
+                            while (true)
+                            {
+                                userName = utils.GetUserInput("Username");
+                                string password = utils.GetPasswordInput("    Password");
                                 string userCsvPath = Path.Combine(workDir, "user.csv");
-                                string pwd = "";
-                                if (File.Exists(userCsvPath))
-                                {
-                                    using (var reader = new StreamReader(userCsvPath))
-                                    {
-                                        using (var csv = new CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)))
-                                        {
-                                            while (csv.Read())
-                                            {
-                                                var record = csv.GetRecord<User>();
-                                                if (record?.UserName == userName)
-                                                {
-                                                    pwd = record.PassWord;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                                string storedPassword = utils.GetStoredPassword(userName, userCsvPath);
 
-                                if (!string.IsNullOrEmpty(pwd) && (encryptedType.Decrypt(pwd, userName) == pass))
+                                if (utils.ValidateUser(storedPassword, password, userName))
                                 {
-                                    loggedIn = true; // Set the logged-in flag to true
+                                    loggedIn = true; // user logged in
                                     authUser = userName;
-                                    Console.WriteLine("\n\nSuccessful Authentication!\nPossible actions: --add, --list, --delete. Use 'exit' to log out:");
+                                    Console.WriteLine("\n~ ~ ~ ~ ~ ~ Successful Authentication! ~ ~ ~ ~ ~ ~\n");
+
+                                    Thread.Sleep(100);
+                                    Console.WriteLine("          ╔═══════════════════════════════╗");
+                                    Thread.Sleep(100);
+                                    Console.WriteLine("          ║         WELCOME BACK !        ║");
+                                    Thread.Sleep(100);
+                                    Console.WriteLine("          ╚═══════════════════════════════╝\n\nPossible commands: 'add', 'list', 'delete'. Use 'exit' to log out:");
+
+                                    break;
                                 }
                                 else
                                 {
-                                    Console.WriteLine("\nInvalid username or password.");
-                                    break;
+                                    Console.WriteLine("\n\nInvalid username or password! Please try again:\n");
+                                    // Allow the user to try again; continue to the next iteration of the loop
                                 }
-                                i++; // Skip the next argument
                             }
                             break;
 
                         default:
-                            Console.WriteLine($"Unknown command-line argument: {args[i]}\n");
+                            Console.WriteLine($"\nUnknown command-line argument: '{args[i]}'\n");
                             break;
                     }
                 }
@@ -246,6 +130,7 @@ namespace PasswordManager
 
             while (loggedIn)
             {
+                Console.Write(">> ");
                 string input = Console.ReadLine();
                 if (input!.Equals("exit", StringComparison.OrdinalIgnoreCase))
                 {
@@ -261,44 +146,28 @@ namespace PasswordManager
 
                         case "add":
                             Console.WriteLine("\nTo save a new secret, please fill out the required fields below!");
-                            Console.Write("Website: ");
-                            string website = Console.ReadLine()!;
-
-                            if (website == "")
+                            while (true)
                             {
-                                Console.WriteLine("\nWebsite field cannot be empty!\n");
+                                string website = utils.GetUserInput("     Website Link");
+                                if (fileHandler.websitePresent(website) == true) continue;
+                                string webUserName = utils.GetUserInput(" Website Username");
+                                string webPwd = utils.GetPasswordInput("     Website Password");
+
+                                var vault = new Vault
+                                {
+                                    UserId = authUser,
+                                    UserName = webUserName,
+                                    WebSite = website,
+                                    PassWord = encryptedType.Encrypt(webPwd, authUser)
+                                };
+
+                                fileHandler.FileWrite(vault);
                                 break;
                             }
-
-                            Console.Write("Username on website: ");
-                            string webUserName = Console.ReadLine()!;
-
-                            if (webUserName == "")
-                            {
-                                Console.WriteLine("\nUsername field cannot be empty!\n");
-                                break;
-                            }
-
-                            Console.Write("Password on website: ");
-                            string webPwd = Console.ReadLine()!;
-
-                            if (webPwd == "")
-                            {
-                                Console.WriteLine("\nPassword field cannot be empty!\n");
-                                break;
-                            }
-                            var vault = new Vault
-                            {
-                                UserId = authUser,
-                                UserName = webUserName,
-                                WebSite = website,
-                                PassWord = encryptedType.Encrypt(webPwd, authUser)
-                            };
-
-                            fileHandler.FileWrite(vault);
                             break;
 
                         case "delete":
+                            fileHandler.DeleteSecret(authUser);
                             break;
 
                         default:

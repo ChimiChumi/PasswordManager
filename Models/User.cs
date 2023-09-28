@@ -14,9 +14,9 @@ namespace PasswordManager.Models
         public string PassWord { get; set; } = null!;
 
         [Name("firstname")]
-        public string? FirstName { get; set; } = string.Empty;
+        public string? FirstName { get; set; } = null!;
 
         [Name("lastname")]
-        public string? LastName { get; set; } = string.Empty;
+        public string? LastName { get; set; } = null!;
     }
 }

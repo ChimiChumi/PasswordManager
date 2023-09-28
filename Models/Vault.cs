@@ -11,7 +11,7 @@ namespace PasswordManager.Models
         public string UserName { get; set; } = null!;
 
         [Name("website")]
-        public string WebSite { get; set; } = string.Empty;
+        public string WebSite { get; set; } = null!;
 
         [Name("password")]
         public string PassWord { get; set; } = null!;

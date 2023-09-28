@@ -130,6 +130,10 @@ namespace PasswordManager
                     }
                 }
             }
+            else
+            {
+                Console.WriteLine("\n   No arguments given!\n");
+            }
 
             while (loggedIn)
             {

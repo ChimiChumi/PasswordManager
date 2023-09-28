@@ -36,6 +36,7 @@ namespace PasswordManager.Classes
                     var record = csv.GetRecord<User>();
                     if (record?.Email == email)
                     {
+                        Console.WriteLine($"\nError: User with email '{record.Email}' already exists!\n\n");
                         return true;
                     }
                 }
@@ -61,7 +62,7 @@ namespace PasswordManager.Classes
                     var record = csv.GetRecord<Vault>();
                     if (record?.WebSite == website)
                     {
-                        Console.WriteLine($"\nError: Secret with website '{record.WebSite}' already exists!\nTry adding a new one:\n");
+                        Console.WriteLine($"\nError: Secret with website '{record.WebSite}' already exists!\n\nTry adding a new one:\n");
                         return true;
                     }
                 }
@@ -91,7 +92,7 @@ namespace PasswordManager.Classes
 
             using CsvWriter csv = new(writer, config);
             csv.WriteRecords(new User[] { user });
-            Console.WriteLine("\n\n~ ~ ~ Registration Successful! ~ ~ ~\n     (To log in, use '--login')\n");
+            Console.WriteLine("\n\n  ~ ~ ~ Registration Successful! ~ ~ ~\n     (To log in, use '--login')\n");
         }
 
         public void FileWrite(Vault vault)
@@ -148,7 +149,7 @@ namespace PasswordManager.Classes
                 Console.WriteLine("No secrets found!");
                 return;
             }
-            while (true)
+            while (true) // to stay in delete mode
             {
                 using (var reader = new StreamReader(vaultCsvPath))
                 using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)))
@@ -160,12 +161,12 @@ namespace PasswordManager.Classes
 
                 if (userSecrets.Count == 0)
                 {
-                    Console.WriteLine("You have no secrets stored!");
+                    Console.WriteLine("\nYou have no secrets stored!");
                     return;
                 }
 
                 Console.WriteLine("\nAvailable websites:");
-                Console.WriteLine("0. <-- [Go back]");
+                Console.WriteLine("0. [RETURN]");
 
                 for (int i = 0; i < userSecrets.Count; i++)
                 {
@@ -192,7 +193,7 @@ namespace PasswordManager.Classes
                     using CsvWriter csv = new(writer, config);
                     csv.WriteRecords(secrets);
 
-                    Console.WriteLine("\nSecret deleted successfully!\n");
+                    Console.WriteLine("\n~ ~ ~ Secret deleted successfully! ~ ~ ~");
                 }
                 else
                 {

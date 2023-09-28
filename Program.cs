@@ -1,6 +1,9 @@
 ﻿#pragma warning disable
+using CsvHelper.Configuration;
+using CsvHelper;
 using PasswordManager.Classes;
 using PasswordManager.Models;
+using System.Globalization;
 using System.Threading;
 
 namespace PasswordManager
@@ -52,7 +55,7 @@ namespace PasswordManager
                             }
                             else
                             {
-                                Console.WriteLine("\n*******************### GREETINGS! ###*******************\nTo create an account, please fill out the fields below.\n");
+                                Console.WriteLine("\n*******************### HELLO USER ! ###*******************\nTo create an account, please fill out the fields below.\n");
 
                                 firstName = utils.GetUserInput(" First Name");
                                 lastName = utils.GetUserInput("  Last Name");
@@ -102,9 +105,9 @@ namespace PasswordManager
                                 {
                                     loggedIn = true; // user logged in
                                     authUser = userName;
-                                    Console.WriteLine("\n~ ~ ~ ~ ~ ~ Successful Authentication! ~ ~ ~ ~ ~ ~\n");
+                                    Console.WriteLine("\n  ~ ~ ~ ~ ~ ~ Successful Authentication! ~ ~ ~ ~ ~ ~\n");
 
-                                    Thread.Sleep(100);
+                                    Thread.Sleep(500);
                                     Console.WriteLine("          ╔═══════════════════════════════╗");
                                     Thread.Sleep(100);
                                     Console.WriteLine("          ║         WELCOME BACK !        ║");
@@ -142,16 +145,47 @@ namespace PasswordManager
                     switch (input)
                     {
                         case "list":
+                            var websites = fileHandler.GetWebsitesForUser(authUser);
+
+                            if (websites.Count == 0)
+                            {
+                                Console.WriteLine("\nYou have no secrets stored!");
+                                break;
+                            }
+
+                            Console.WriteLine("\nStored Websites and Passwords:\n" +
+                                $"----------------------------------------------------------------------");
+                            foreach (var website in websites)
+                            {
+                                // Find the specific record for the website
+                                string vaultCsvPath = Path.Combine(workDir, "vault.csv");
+                                using (var reader = new StreamReader(vaultCsvPath))
+                                using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)))
+                                {
+                                    while (csv.Read())
+                                    {
+                                        var record = csv.GetRecord<Vault>();
+                                        if (record?.UserId == authUser && record.WebSite == website)
+                                        {
+                                            // Decrypt the password and print the website, username, and decrypted password
+                                            string decryptedPassword = encryptedType.Decrypt(record.PassWord, authUser);
+                                            Console.WriteLine($"| Website: '{record.WebSite}' | Username: '{record.UserName}' | Password: '{decryptedPassword}'\n" +
+                                                $"----------------------------------------------------------------------");
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
                             break;
 
                         case "add":
                             Console.WriteLine("\nTo save a new secret, please fill out the required fields below!");
                             while (true)
                             {
-                                string website = utils.GetUserInput("     Website Link");
+                                string website = utils.GetUserInput(" Website Address");
                                 if (fileHandler.websitePresent(website) == true) continue;
-                                string webUserName = utils.GetUserInput(" Website Username");
-                                string webPwd = utils.GetPasswordInput("     Website Password");
+                                string webUserName = utils.GetUserInput("Website Username");
+                                string webPwd = utils.GetPasswordInput("    Website Password");
 
                                 var vault = new Vault
                                 {

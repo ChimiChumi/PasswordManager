@@ -149,36 +149,56 @@ namespace PasswordManager
                     switch (input)
                     {
                         case "list":
-                            var websites = fileHandler.GetWebsitesForUser(authUser);
+                            var currentOrdering = "";
 
-                            if (websites.Count == 0)
+                            var secrets = fileHandler.GetSecretsForUser(authUser);
+
+                            if (secrets.Count == 0)
                             {
                                 Console.WriteLine("\nYou have no secrets stored!");
                                 break;
                             }
 
-                            Console.WriteLine("\nStored Websites and Passwords:\n" +
-                                $"----------------------------------------------------------------------");
-                            foreach (var website in websites)
+                            // Prompt the user to choose the ordering
+                            Console.WriteLine("\nSelect ordering: (1) Website | (2) Username | (3) Password");
+                            Console.Write("\nEnter the number: ");
+                            int orderChoice;
+                            if (int.TryParse(Console.ReadLine(), out orderChoice) && (orderChoice >= 1 && orderChoice <= 3) )
                             {
-                                // Find the specific record for the website
-                                string vaultCsvPath = Path.Combine(workDir, "vault.csv");
-                                using (var reader = new StreamReader(vaultCsvPath))
-                                using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)))
+                                switch (orderChoice)
                                 {
-                                    while (csv.Read())
-                                    {
-                                        var record = csv.GetRecord<Vault>();
-                                        if (record?.UserId == authUser && record.WebSite == website)
-                                        {
-                                            // Decrypt the password and print the website, username, and decrypted password
-                                            string decryptedPassword = encryptedType.Decrypt(record.PassWord, authUser);
-                                            Console.WriteLine($"| Website: '{record.WebSite}' | Username: '{record.UserName}' | Password: '{decryptedPassword}'\n" +
-                                                $"----------------------------------------------------------------------");
-                                            break;
-                                        }
-                                    }
+                                    case 1:
+                                        currentOrdering = "Website";
+                                        secrets = secrets.OrderBy(s => s.WebSite, StringComparer.OrdinalIgnoreCase).ToList();
+                                        break;
+                                    
+                                    case 2:
+                                        currentOrdering = "Username";
+                                        secrets = secrets.OrderBy(s => s.UserName, StringComparer.OrdinalIgnoreCase).ToList();
+                                        break;
+
+                                    case 3:
+                                        currentOrdering = "Password";
+                                        // Decrypt the passwords and then sort based on the decrypted passwords
+                                        secrets = secrets.OrderBy(s => encryptedType.Decrypt(s.PassWord, authUser), StringComparer.OrdinalIgnoreCase).ToList();
+                                        break;
                                 }
+                            }
+                            else
+                            {
+                                Console.WriteLine("\nInvalid selection!");
+                                break;
+                            }
+
+                            // Display the sorted secrets
+                            Console.WriteLine("\nStored Websites and Passwords (Ordered by " + currentOrdering + "):\n" +
+                                $"----------------------------------------------------------------------");
+                            foreach (var secret in secrets)
+                            {
+                                // Decrypt the password and print the website, username, and decrypted password
+                                string decryptedPassword = encryptedType.Decrypt(secret.PassWord, authUser);
+                                Console.WriteLine($"| Website: '{secret.WebSite}' | Username: '{secret.UserName}' | Password: '{decryptedPassword}'\n" +
+                                    $"----------------------------------------------------------------------");
                             }
                             break;
 
@@ -209,7 +229,7 @@ namespace PasswordManager
                             break;
 
                         default:
-                            Console.WriteLine("Unknown command: " + input);
+                            Console.WriteLine("\nUnknown command: " + input+"\n");
                             break;
                     }
                 }

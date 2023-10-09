@@ -139,6 +139,32 @@ namespace PasswordManager.Classes
             return websites;
         }
 
+        public List<Vault> GetSecretsForUser(string userId)
+        {
+            string vaultCsvPath = Path.Combine(workDir, "vault.csv");
+            List<Vault> secrets = new List<Vault>();
+
+            if (!File.Exists(vaultCsvPath))
+            {
+                return secrets; // Return an empty list if the file doesn't exist
+            }
+
+            using (var reader = new StreamReader(vaultCsvPath))
+            using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)))
+            {
+                while (csv.Read())
+                {
+                    var record = csv.GetRecord<Vault>();
+                    if (record?.UserId == userId)
+                    {
+                        secrets.Add(record);
+                    }
+                }
+            }
+
+            return secrets;
+        }
+
         public void DeleteSecret(string userId)
         {
             string vaultCsvPath = Path.Combine(workDir, "vault.csv");

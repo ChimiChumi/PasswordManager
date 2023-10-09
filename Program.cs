@@ -186,7 +186,7 @@ namespace PasswordManager
                             }
                             else
                             {
-                                Console.WriteLine("\nInvalid selection!");
+                                Console.WriteLine("\nInvalid selection!\n");
                                 break;
                             }
 
